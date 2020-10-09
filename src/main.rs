@@ -20,7 +20,7 @@ struct Payload {
     payload_text: String,
 }
 
-fn payload_scraper<'a>(url: &String) -> Vec<&'a str> {
+fn payload_scraper<'a>(url: &String) -> Vec<String> {
 
     // creating reqwest crate client
     let client = reqwest::blocking::Client::new();
@@ -33,14 +33,14 @@ fn payload_scraper<'a>(url: &String) -> Vec<&'a str> {
 
     let mut body = String::new();
     res.read_to_string(&mut body).unwrap();
-    let mut code_txt = Vec::new();
+    // let mut code_txt = Vec::new();
     let mut payload_vector = Vec::new();
-    let fragment = Html::parse_document(&body);
+    let fragment = Html::parse_document(body.as_str());
     let code_selector = Selector::parse("code").unwrap();
 
     for code_reference in fragment.select(&code_selector) {
-        code_txt = code_reference.text().collect::<Vec<&str>>();
-        payload_vector.push(code_txt[0]);
+        let code_txt = code_reference.text().collect::<Vec<&str>>();
+        payload_vector.push(code_txt[0].to_string());
     }
     payload_vector
 }
@@ -56,14 +56,14 @@ fn main() -> std::io::Result<()> {
         .expect("Failed to read line");
 
 
-    OpenOptions::new().write(true).create(true).open("payload.json");
+//    OpenOptions::new().write(true).create(true).open("payload.json");
 
     let data = fs::read_to_string("payload.json").expect("Unable to Read File!");
-    let mut payload_from_method = payload_scraper(&input_url);
+    let payload_from_method = payload_scraper(&input_url);
     let mut payload_holder: Vec<Payload> = Vec::new();
 
     for code in payload_from_method.iter() {
-        let mut payload = Payload {
+        let payload = Payload {
             payload_type: "1".to_string(),
             payload_text: code.to_string(),
         };
@@ -71,7 +71,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if fs::metadata("payload.json").unwrap().len() != 0 {
-       payload_holder = serde_json::from_str(&data)?;
+        payload_holder = serde_json::from_str(&data)?;
     }
 
     let json: String = serde_json::to_string(&payload_holder)?;
